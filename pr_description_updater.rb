@@ -30,7 +30,7 @@ args.split(',').each do |arg|
   project_name, pr_number = arg.split(' ')
   pr_number = pr_number.to_i
 
-  puts ">> Fetching #{project_name} - #{pr_number}"
+  puts "\n>> Fetching #{project_name} - #{pr_number}"
 
   ####
   # GRAB JIRA NUMBERS FROM THE COMMITS OF THE PR
@@ -78,6 +78,8 @@ args.split(',').each do |arg|
   @parent_tags = []
 
   def extract_jira_info(jira, subtasks = nil)
+    print "\e[1;32m.\e[0m"
+
     jira_status = jira.status.name
     jira_tag = jira.key
 
@@ -129,3 +131,5 @@ args.split(',').each do |arg|
 
   gh_client.update_pull_request(repo.id, release_pr.number, body: pr_body)
 end
+
+puts
