@@ -91,7 +91,7 @@ args.split(',').each do |arg|
 
     # customfield_10033 is the field id of the 'Deploy Notes' field
     if jira.customfield_10033.present? && jira.customfield_10033 != 'Not Required'
-      @jiras_with_deploy_notes << "#### [#{jira_tag}] #{jira.summary.rstrip} \n #{jira.customfield_10033.gsub('{code}', '```').gsub('{{', '`').gsub('}}', '`').gsub('*', '**')}"
+      @jiras_with_deploy_notes << "#### [#{jira_tag}] #{jira.summary.rstrip} \n #{jira.customfield_10033.gsub('{code}', "\n```\n").gsub('{{', '`').gsub('}}', '`').gsub('*', '**').gsub('{code:ruby}', "```ruby\n")}"
     end
 
     @pr_footer << "[#{jira_tag}]: https://#{ENV['JIRA_COMPANY_NAME']}.atlassian.net/browse/#{jira_tag}"
