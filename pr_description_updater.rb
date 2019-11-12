@@ -109,11 +109,28 @@ args.split(',').each do |arg|
     begin
       jira = jira_client.Issue.find(jira_tag)
 
+      jira_status = jira.status.name
+      if jira_status == 'Code Owner Review'
+        # available_transitions = jira_client.Transition.all(issue: jira)
+        # available_transitions.each { |ea| puts "#{ea.name} (id #{ea.id})" }
+        jira.transitions.build.save!('transition' => { 'id' => '191' })
+        jira.transitions.build.save!('transition' => { 'id' => '81' })
+        jira = jira_client.Issue.find(jira_tag)
+        puts "Resolved issue #{jira.key}"
+      elsif jira_status == 'Pending Merge'
+        # available_transitions = jira_client.Transition.all(issue: jira)
+        # available_transitions.each { |ea| puts "#{ea.name} (id #{ea.id})" }
+        jira.transitions.build.save!('transition' => { 'id' => '81' })
+        jira = jira_client.Issue.find(jira_tag)
+        puts "Resolved issue #{jira.key}"
+      end
+
       # Save parent jiras to use later
       @parent_tags << jira.parent['key'] if jira.try(:parent).present?
 
       extract_jira_info(jira)
-    rescue StandardError
+    rescue StandardError => e
+      puts e
       puts "JIRA #{jira_tag} não encontrado"
     end
   end
