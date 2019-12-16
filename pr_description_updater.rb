@@ -94,6 +94,7 @@ args.split(',').each do |arg|
       deploy_notes_parsed = jira.customfield_10033
                                 .gsub('{code}', "\n```\n")
                                 .gsub('{{', '`')
+                                .gsub('{noformat}', "\n```\n")
                                 .gsub('}}', '`')
                                 .gsub('*', '**')
                                 .gsub('{code:ruby}', "```ruby\n")
