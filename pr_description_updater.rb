@@ -3,6 +3,7 @@
 
 require 'octokit'
 require 'jira-ruby'
+require 'byebug'
 
 ####
 # CHECK IF PROJECT NAME AND PR NUMBER WERE SENT
@@ -90,7 +91,7 @@ args.split(',').each do |arg|
     end
 
     # customfield_10033 is the field id of the 'Deploy Notes' field
-    if jira.customfield_10033.present? && jira.customfield_10033 != 'Not Required'
+    if jira.key.include?('SER') && jira.customfield_10033.present? && jira.customfield_10033 != 'Not Required'
       deploy_notes_parsed = jira.customfield_10033
                                 .gsub('{code}', "\n```\n")
                                 .gsub('{{', '`')
