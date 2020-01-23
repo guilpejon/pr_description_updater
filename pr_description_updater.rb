@@ -78,30 +78,43 @@ args.split(',').each do |arg|
   @jiras_with_deploy_notes = []
   @parent_tags = []
 
+  def parse_deploy_notes(deploy_notes_field)
+    return '' unless deploy_notes_field
+
+    deploy_notes_field
+      .gsub('{code}', "\n```\n")
+      .gsub('{{', '`')
+      .gsub('{noformat}', "\n```\n")
+      .gsub('}}', '`')
+      .gsub('*', '**')
+      .gsub('{code:ruby}', "```ruby\n")
+      .gsub('h4.', '####')
+      .to_s
+  end
+
   def extract_jira_info(jira, subtasks = nil)
     print "\e[1;32m.\e[0m"
 
     jira_status = jira.status.name
     jira_tag = jira.key
 
-    if jira_status == 'Closed'
+    if jira_status == 'Closed' || jira_status == 'DONE'
       @closed_jiras << "#### [#{jira_tag}] #{jira.summary.rstrip}"
     else
       @open_jiras << "#### [#{jira_tag}] (#{jira_status})\n**Title:** #{jira.summary.rstrip}\n#{"**Subtasks:** #{subtasks.join(', ')}" if subtasks.present?}"
     end
-
-    # customfield_10033 is the field id of the 'Deploy Notes' field
-    if jira.key.include?('SER') && jira.customfield_10033.present? && jira.customfield_10033 != 'Not Required'
-      deploy_notes_parsed = jira.customfield_10033
-                                .gsub('{code}', "\n```\n")
-                                .gsub('{{', '`')
-                                .gsub('{noformat}', "\n```\n")
-                                .gsub('}}', '`')
-                                .gsub('*', '**')
-                                .gsub('{code:ruby}', "```ruby\n")
-                                .gsub('h4.', '####')
-                                .to_s
-      @jiras_with_deploy_notes << "#### [#{jira_tag}] #{jira.summary.rstrip} \n #{deploy_notes_parsed}"
+    # customfield_XXXXX is the field id of the 'Deploy Notes' field
+    if jira.issuetype.name != 'Epic'
+      if jira.key.include?('SER') && jira.customfield_10033.present? && jira.customfield_10033 != 'Not Required'
+        deploy_notes_parsed = parse_deploy_notes(jira.customfield_10033)
+        @jiras_with_deploy_notes << "#### [#{jira_tag}] #{jira.summary.rstrip} \n #{deploy_notes_parsed}"
+      elsif jira.key.include?('EGIP') && jira.customfield_10054.present?
+        deploy_notes_parsed = parse_deploy_notes(jira.customfield_10054)
+        @jiras_with_deploy_notes << "#### [#{jira_tag}] #{jira.summary.rstrip} \n #{deploy_notes_parsed}" if deploy_notes_parsed
+      elsif jira.key.include?('ATLAN') && jira.customfield_10057.present?
+        deploy_notes_parsed = parse_deploy_notes(jira.customfield_10057)
+        @jiras_with_deploy_notes << "#### [#{jira_tag}] #{jira.summary.rstrip} \n #{deploy_notes_parsed}" if deploy_notes_parsed
+      end
     end
 
     @pr_footer << "[#{jira_tag}]: https://#{ENV['JIRA_COMPANY_NAME']}.atlassian.net/browse/#{jira_tag}"
@@ -110,19 +123,21 @@ args.split(',').each do |arg|
   jiras.sort.each do |jira_tag|
     begin
       jira = jira_client.Issue.find(jira_tag)
+      # available_transitions = jira_client.Transition.all(issue: jira)
+      # available_transitions.each { |ea| puts "#{ea.name} (id #{ea.id})" }
 
       jira_status = jira.status.name
       if jira_status == 'Code Owner Review'
-        # available_transitions = jira_client.Transition.all(issue: jira)
-        # available_transitions.each { |ea| puts "#{ea.name} (id #{ea.id})" }
         jira.transitions.build.save!('transition' => { 'id' => '191' })
         jira.transitions.build.save!('transition' => { 'id' => '81' })
         jira = jira_client.Issue.find(jira_tag)
         puts "Resolved issue #{jira.key}"
       elsif jira_status == 'Pending Merge'
-        # available_transitions = jira_client.Transition.all(issue: jira)
-        # available_transitions.each { |ea| puts "#{ea.name} (id #{ea.id})" }
         jira.transitions.build.save!('transition' => { 'id' => '81' })
+        jira = jira_client.Issue.find(jira_tag)
+        puts "Resolved issue #{jira.key}"
+      elsif jira_status == 'PENDING MERGE'
+        jira.transitions.build.save!('transition' => { 'id' => '121' })
         jira = jira_client.Issue.find(jira_tag)
         puts "Resolved issue #{jira.key}"
       end
@@ -133,19 +148,20 @@ args.split(',').each do |arg|
       extract_jira_info(jira)
     rescue StandardError => e
       puts e
-      puts "JIRA #{jira_tag} não encontrado"
+      puts e.backtrace.join("\n")
+      # puts "JIRA #{jira_tag} não encontrado"
     end
   end
 
   # Extract parent and write it with its subtasks
-  @parent_tags.uniq.each do |jira_tag|
-    jira = jira_client.Issue.find(jira_tag)
-    subtasks = jira.subtasks.map { |j| "[#{j['key']}] (#{j['fields']['status']['name']})" }
-    extract_jira_info(jira, subtasks)
-    subtasks.each do |tag|
-      @pr_footer << "#{tag.split(' ').first}: https://#{ENV['JIRA_COMPANY_NAME']}.atlassian.net/browse/#{tag.gsub(/\[|\]/, '').split(' ').first}"
-    end
-  end
+  # @parent_tags.uniq.each do |jira_tag|
+  #   jira = jira_client.Issue.find(jira_tag)
+  #   subtasks = jira.subtasks.map { |j| "[#{j['key']}] (#{j['fields']['status']['name']})" }
+  #   extract_jira_info(jira, subtasks)
+  #   subtasks.each do |tag|
+  #     @pr_footer << "#{tag.split(' ').first}: https://#{ENV['JIRA_COMPANY_NAME']}.atlassian.net/browse/#{tag.gsub(/\[|\]/, '').split(' ').first}"
+  #   end
+  # end
 
   pr_body = "#{"# OPEN (#{@open_jiras.count})\n" if @open_jiras.present?}" \
     "#{@open_jiras.join("\n") if @open_jiras.present?}" \
