@@ -132,11 +132,7 @@ args.split(',').each do |arg|
         jira.transitions.build.save!('transition' => { 'id' => '81' })
         jira = jira_client.Issue.find(jira_tag)
         puts "Resolved issue #{jira.key}"
-      elsif jira_status == 'Pending Merge'
-        jira.transitions.build.save!('transition' => { 'id' => '81' })
-        jira = jira_client.Issue.find(jira_tag)
-        puts "Resolved issue #{jira.key}"
-      elsif jira_status == 'PENDING MERGE'
+      elsif jira_status == 'Pending Merge' || jira_status == 'PENDING MERGE'
         jira.transitions.build.save!('transition' => { 'id' => '121' })
         jira = jira_client.Issue.find(jira_tag)
         puts "Resolved issue #{jira.key}"
