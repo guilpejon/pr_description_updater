@@ -74,6 +74,7 @@ args.split(',').each do |arg|
 
   @pr_footer = []
   @closed_jiras = []
+  @released_jiras = []
   @open_jiras = []
   @jiras_with_deploy_notes = []
   @parent_tags = []
@@ -98,22 +99,26 @@ args.split(',').each do |arg|
     jira_status = jira.status.name
     jira_tag = jira.key
 
-    if jira_status == 'Closed' || jira_status == 'DONE'
-      @closed_jiras << "#### [#{jira_tag}] #{jira.summary.rstrip}"
+    if jira_status == 'RELEASE' || jira_status == 'Release'
+      @released_jiras << "#### [#{jira_tag}] #{jira.summary.rstrip}"
     else
-      @open_jiras << "#### [#{jira_tag}] (#{jira_status})\n**Title:** #{jira.summary.rstrip}\n#{"**Subtasks:** #{subtasks.join(', ')}" if subtasks.present?}"
-    end
-    # customfield_XXXXX is the field id of the 'Deploy Notes' field
-    if jira.issuetype.name != 'Epic'
-      if jira.key.include?('SER') && jira.customfield_10033.present? && jira.customfield_10033 != 'Not Required'
-        deploy_notes_parsed = parse_deploy_notes(jira.customfield_10033)
-        @jiras_with_deploy_notes << "#### [#{jira_tag}] #{jira.summary.rstrip} \n #{deploy_notes_parsed}"
-      elsif jira.key.include?('EGIP') && jira.customfield_10054.present?
-        deploy_notes_parsed = parse_deploy_notes(jira.customfield_10054)
-        @jiras_with_deploy_notes << "#### [#{jira_tag}] #{jira.summary.rstrip} \n #{deploy_notes_parsed}" if deploy_notes_parsed
-      elsif jira.key.include?('ATLAN') && jira.customfield_10057.present?
-        deploy_notes_parsed = parse_deploy_notes(jira.customfield_10057)
-        @jiras_with_deploy_notes << "#### [#{jira_tag}] #{jira.summary.rstrip} \n #{deploy_notes_parsed}" if deploy_notes_parsed
+      if jira_status == 'Closed' || jira_status == 'DONE' || jira_status == 'Done' || jira_status == 'Acceptance' || jira_status == 'ACCEPTANCE'
+        @closed_jiras << "#### [#{jira_tag}] #{jira.summary.rstrip}"
+      else
+        @open_jiras << "#### [#{jira_tag}] (#{jira_status})\n**Title:** #{jira.summary.rstrip}\n#{"**Subtasks:** #{subtasks.join(', ')}" if subtasks.present?}"
+      end
+      # customfield_XXXXX is the field id of the 'Deploy Notes' field
+      if jira.issuetype.name != 'Epic'
+        if jira.key.include?('SER') && jira.customfield_10033.present? && jira.customfield_10033 != 'Not Required'
+          deploy_notes_parsed = parse_deploy_notes(jira.customfield_10033)
+          @jiras_with_deploy_notes << "#### [#{jira_tag}] #{jira.summary.rstrip} \n #{deploy_notes_parsed}"
+        elsif jira.key.include?('EGIP') && jira.customfield_10054.present?
+          deploy_notes_parsed = parse_deploy_notes(jira.customfield_10054)
+          @jiras_with_deploy_notes << "#### [#{jira_tag}] #{jira.summary.rstrip} \n #{deploy_notes_parsed}" if deploy_notes_parsed
+        elsif jira.key.include?('ATLAN') && jira.customfield_10057.present?
+          deploy_notes_parsed = parse_deploy_notes(jira.customfield_10057)
+          @jiras_with_deploy_notes << "#### [#{jira_tag}] #{jira.summary.rstrip} \n #{deploy_notes_parsed}" if deploy_notes_parsed
+        end
       end
     end
 
@@ -143,9 +148,9 @@ args.split(',').each do |arg|
 
       extract_jira_info(jira)
     rescue StandardError => e
-      puts e
-      puts e.backtrace.join("\n")
-      # puts "JIRA #{jira_tag} não encontrado"
+      # puts e
+      # puts e.backtrace.join("\n")
+      puts "JIRA #{jira_tag} não encontrado"
     end
   end
 
@@ -163,6 +168,8 @@ args.split(',').each do |arg|
     "#{@open_jiras.join("\n") if @open_jiras.present?}" \
     "#{"\n# CLOSED (#{@closed_jiras.count})\n" if @closed_jiras.present?}" \
     "#{@closed_jiras.join("\n") if @closed_jiras.present?}" \
+    "#{"\n# RELEASED (#{@released_jiras.count})\n" if @released_jiras.present?}" \
+    "#{@released_jiras.join("\n") if @released_jiras.present?}" \
     "#{"\n# DEPLOY NOTES\n" if @jiras_with_deploy_notes.present?}" \
     "#{@jiras_with_deploy_notes.join("\n") if @jiras_with_deploy_notes.present?}" \
     "\n\n" \
