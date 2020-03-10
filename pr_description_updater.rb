@@ -45,7 +45,11 @@ args.split(',').each do |arg|
 
   jiras = []
   commits.each do |commit|
-    jiras << commit.commit.message.scan(/(\w+-\d+)/).flatten[0]&.strip
+    puts commit.message
+    jira_codes = commit.commit.message.scan(/\[[A-Z]*-\d*\]/)
+    jira_codes.each do |j|
+      jiras << j[1..-2]&.strip
+    end
   end
 
   jiras = jiras.reject(&:nil?).map(&:upcase).uniq
