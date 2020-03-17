@@ -45,7 +45,7 @@ args.split(',').each do |arg|
 
   jiras = []
   commits.each do |commit|
-    puts commit.message
+    # puts commit.message
     jira_codes = commit.commit.message.scan(/\[[A-Z]*-\d*\]/)
     jira_codes.each do |j|
       jiras << j[1..-2]&.strip
@@ -136,9 +136,9 @@ args.split(',').each do |arg|
       # available_transitions.each { |ea| puts "#{ea.name} (id #{ea.id})" }
 
       jira_status = jira.status.name
-      if jira_status == 'Code Owner Review'
-        jira.transitions.build.save!('transition' => { 'id' => '191' })
-        jira.transitions.build.save!('transition' => { 'id' => '81' })
+      if jira_status == 'Code Owner Review' || jira_status == 'CODE OWNER REVIEW'
+        jira.transitions.build.save!('transition' => { 'id' => '121' })
+        # jira.transitions.build.save!('transition' => { 'id' => '81' })
         jira = jira_client.Issue.find(jira_tag)
         puts "Resolved issue #{jira.key}"
       elsif jira_status == 'Pending Merge' || jira_status == 'PENDING MERGE'
@@ -181,5 +181,3 @@ args.split(',').each do |arg|
 
   gh_client.update_pull_request(repo.id, release_pr.number, body: pr_body)
 end
-
-puts
