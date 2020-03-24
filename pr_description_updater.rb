@@ -45,8 +45,8 @@ args.split(',').each do |arg|
 
   jiras = []
   commits.each do |commit|
-    # puts commit.message
-    jira_codes = commit.commit.message.scan(/\[[A-Z]*-\d*\]/)
+    commit_title = commit.commit.message.split("\n").first
+    jira_codes = commit_title.scan(/[\[|\(][A-Z]*-\d*[\]|\)]/)
     jira_codes.each do |j|
       jiras << j[1..-2]&.strip
     end
@@ -109,7 +109,9 @@ args.split(',').each do |arg|
       if jira_status == 'Closed' || jira_status == 'DONE' || jira_status == 'Done' || jira_status == 'Acceptance' || jira_status == 'ACCEPTANCE'
         @closed_jiras << "#### [#{jira_tag}] #{jira.summary.rstrip}"
       else
-        @open_jiras << "#### [#{jira_tag}] (#{jira_status})\n**Title:** #{jira.summary.rstrip}\n#{"**Subtasks:** #{subtasks.join(', ')}" if subtasks.present?}"
+        @open_jiras << "#### [#{jira_tag}] (#{jira_status})\n**Title:** #{jira.summary.rstrip}\n#{if subtasks.present?
+                                                                                                    "**Subtasks:** #{subtasks.join(', ')}"
+                                                                                                  end}"
       end
       # customfield_XXXXX is the field id of the 'Deploy Notes' field
       if jira.issuetype.name != 'Epic'
@@ -118,10 +120,14 @@ args.split(',').each do |arg|
           @jiras_with_deploy_notes << "#### [#{jira_tag}] #{jira.summary.rstrip} \n #{deploy_notes_parsed}"
         elsif jira.key.include?('EGIP') && jira.customfield_10054.present?
           deploy_notes_parsed = parse_deploy_notes(jira.customfield_10054)
-          @jiras_with_deploy_notes << "#### [#{jira_tag}] #{jira.summary.rstrip} \n #{deploy_notes_parsed}" if deploy_notes_parsed
+          if deploy_notes_parsed
+            @jiras_with_deploy_notes << "#### [#{jira_tag}] #{jira.summary.rstrip} \n #{deploy_notes_parsed}"
+          end
         elsif jira.key.include?('ATLAN') && jira.customfield_10057.present?
           deploy_notes_parsed = parse_deploy_notes(jira.customfield_10057)
-          @jiras_with_deploy_notes << "#### [#{jira_tag}] #{jira.summary.rstrip} \n #{deploy_notes_parsed}" if deploy_notes_parsed
+          if deploy_notes_parsed
+            @jiras_with_deploy_notes << "#### [#{jira_tag}] #{jira.summary.rstrip} \n #{deploy_notes_parsed}"
+          end
         end
       end
     end
@@ -130,32 +136,30 @@ args.split(',').each do |arg|
   end
 
   jiras.sort.each do |jira_tag|
-    begin
+    jira = jira_client.Issue.find(jira_tag)
+    # available_transitions = jira_client.Transition.all(issue: jira)
+    # available_transitions.each { |ea| puts "#{ea.name} (id #{ea.id})" }
+
+    jira_status = jira.status.name
+    if jira_status == 'Code Owner Review' || jira_status == 'CODE OWNER REVIEW'
+      jira.transitions.build.save!('transition' => { 'id' => '121' })
+      # jira.transitions.build.save!('transition' => { 'id' => '81' })
       jira = jira_client.Issue.find(jira_tag)
-      # available_transitions = jira_client.Transition.all(issue: jira)
-      # available_transitions.each { |ea| puts "#{ea.name} (id #{ea.id})" }
-
-      jira_status = jira.status.name
-      if jira_status == 'Code Owner Review' || jira_status == 'CODE OWNER REVIEW'
-        jira.transitions.build.save!('transition' => { 'id' => '121' })
-        # jira.transitions.build.save!('transition' => { 'id' => '81' })
-        jira = jira_client.Issue.find(jira_tag)
-        puts "Resolved issue #{jira.key}"
-      elsif jira_status == 'Pending Merge' || jira_status == 'PENDING MERGE'
-        jira.transitions.build.save!('transition' => { 'id' => '121' })
-        jira = jira_client.Issue.find(jira_tag)
-        puts "Resolved issue #{jira.key}"
-      end
-
-      # Save parent jiras to use later
-      @parent_tags << jira.parent['key'] if jira.try(:parent).present?
-
-      extract_jira_info(jira)
-    rescue StandardError => e
-      # puts e
-      # puts e.backtrace.join("\n")
-      puts "JIRA #{jira_tag} não encontrado"
+      puts "Resolved issue #{jira.key}"
+    elsif jira_status == 'Pending Merge' || jira_status == 'PENDING MERGE'
+      jira.transitions.build.save!('transition' => { 'id' => '121' })
+      jira = jira_client.Issue.find(jira_tag)
+      puts "Resolved issue #{jira.key}"
     end
+
+    # Save parent jiras to use later
+    @parent_tags << jira.parent['key'] if jira.try(:parent).present?
+
+    extract_jira_info(jira)
+  rescue StandardError => e
+    puts e
+    # puts e.backtrace.join("\n")
+    # puts "JIRA #{jira_tag} não encontrado"
   end
 
   # Extract parent and write it with its subtasks
