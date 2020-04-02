@@ -78,6 +78,7 @@ args.split(',').each do |arg|
 
   @pr_footer = []
   @closed_jiras = []
+  @in_acceptance_jiras = []
   @released_jiras = []
   @open_jiras = []
   @jiras_with_deploy_notes = []
@@ -106,8 +107,10 @@ args.split(',').each do |arg|
     if jira_status == 'RELEASE' || jira_status == 'Release'
       @released_jiras << "#### [#{jira_tag}] #{jira.summary.rstrip}"
     else
-      if jira_status == 'Closed' || jira_status == 'DONE' || jira_status == 'Done' || jira_status == 'Acceptance' || jira_status == 'ACCEPTANCE'
+      if jira_status == 'Closed' || jira_status == 'DONE' || jira_status == 'Done'
         @closed_jiras << "#### [#{jira_tag}] #{jira.summary.rstrip}"
+      elsif jira_status == 'Acceptance' || jira_status == 'ACCEPTANCE'
+        @in_acceptance_jiras << "#### [#{jira_tag}] #{jira.summary.rstrip}"
       else
         @open_jiras << "#### [#{jira_tag}] (#{jira_status})\n**Title:** #{jira.summary.rstrip}\n#{if subtasks.present?
                                                                                                     "**Subtasks:** #{subtasks.join(', ')}"
@@ -174,12 +177,20 @@ args.split(',').each do |arg|
 
   pr_body = "#{"# OPEN (#{@open_jiras.count})\n" if @open_jiras.present?}" \
     "#{@open_jiras.join("\n") if @open_jiras.present?}" \
+    "#{if @in_acceptance_jiras.present?
+         "\n# ACCEPTANCE (#{@in_acceptance_jiras.count})\n"
+       end}" \
+    "#{@in_acceptance_jiras.join("\n") if @in_acceptance_jiras.present?}" \
     "#{"\n# CLOSED (#{@closed_jiras.count})\n" if @closed_jiras.present?}" \
     "#{@closed_jiras.join("\n") if @closed_jiras.present?}" \
-    "#{"\n# RELEASED (#{@released_jiras.count})\n" if @released_jiras.present?}" \
+    "#{if @released_jiras.present?
+         "\n# RELEASED (#{@released_jiras.count})\n"
+       end}" \
     "#{@released_jiras.join("\n") if @released_jiras.present?}" \
     "#{"\n# DEPLOY NOTES\n" if @jiras_with_deploy_notes.present?}" \
-    "#{@jiras_with_deploy_notes.join("\n") if @jiras_with_deploy_notes.present?}" \
+    "#{if @jiras_with_deploy_notes.present?
+         @jiras_with_deploy_notes.join("\n")
+       end}" \
     "\n\n" \
     "#{@pr_footer.join("\n")}"
 
