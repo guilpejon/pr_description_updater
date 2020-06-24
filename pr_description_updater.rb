@@ -144,7 +144,7 @@ args.split(',').each do |arg|
     # available_transitions.each { |ea| puts "#{ea.name} (id #{ea.id})" }
 
     jira_status = jira.status.name
-    if jira_status == 'Code Owner Review' || jira_status == 'CODE OWNER REVIEW'
+    if jira_status.downcase == 'second review'
       jira.transitions.build.save!('transition' => { 'id' => '121' })
       # jira.transitions.build.save!('transition' => { 'id' => '81' })
       jira = jira_client.Issue.find(jira_tag)
