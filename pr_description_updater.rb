@@ -144,15 +144,11 @@ args.split(',').each do |arg|
     # available_transitions.each { |ea| puts "#{ea.name} (id #{ea.id})" }
 
     jira_status = jira.status.name
-    if jira_status.downcase == 'second review'
+    if jira_status.downcase == 'second review' || jira_status.downcase == 'pr accepted'
       jira.transitions.build.save!('transition' => { 'id' => '121' })
       # jira.transitions.build.save!('transition' => { 'id' => '81' })
       jira = jira_client.Issue.find(jira_tag)
-      puts "Resolved issue #{jira.key}"
-    elsif jira_status == 'Pending Merge' || jira_status == 'PENDING MERGE'
-      jira.transitions.build.save!('transition' => { 'id' => '121' })
-      jira = jira_client.Issue.find(jira_tag)
-      puts "Resolved issue #{jira.key}"
+      puts "Issue #{jira.key} in QA"
     end
 
     # Save parent jiras to use later

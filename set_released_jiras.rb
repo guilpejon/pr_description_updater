@@ -81,7 +81,7 @@ args.split(',').each do |arg|
     # available_transitions.each { |ea| puts "#{ea.name} (id #{ea.id})" }
 
     jira_status = jira.status.name
-    if jira_status.downcase == 'acceptance'
+    if jira_status.downcase == 'acceptance' || jira_status.downcase == 'done'
       jira.transitions.build.save!('transition' => { 'id' => '161' })
       puts "RELEASED issue #{jira.key}"
     end
