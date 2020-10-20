@@ -107,7 +107,7 @@ args.split(',').each do |arg|
     if jira_status == 'RELEASE' || jira_status == 'Release'
       @released_jiras << "#### [#{jira_tag}] #{jira.summary.rstrip}"
     else
-      if jira_status == 'Closed' || jira_status == 'DONE' || jira_status == 'Done'
+      if jira_status == 'Closed' || jira_status == 'DONE' || jira_status == 'Done' || jira_status == 'ready-for-release'
         @closed_jiras << "#### [#{jira_tag}] #{jira.summary.rstrip}"
       elsif jira_status == 'Acceptance' || jira_status == 'ACCEPTANCE'
         @in_acceptance_jiras << "#### [#{jira_tag}] #{jira.summary.rstrip}"
@@ -139,14 +139,19 @@ args.split(',').each do |arg|
   end
 
   jiras.sort.each do |jira_tag|
+    next if jira_tag.include?("BAB") || jira_tag.include?("IMPL")
+
     jira = jira_client.Issue.find(jira_tag)
     # available_transitions = jira_client.Transition.all(issue: jira)
     # available_transitions.each { |ea| puts "#{ea.name} (id #{ea.id})" }
 
     jira_status = jira.status.name
+    # old new gen boards
     if jira_status.downcase == 'second review' || jira_status.downcase == 'pr accepted'
       jira.transitions.build.save!('transition' => { 'id' => '121' })
-      # jira.transitions.build.save!('transition' => { 'id' => '81' })
+    # new classic boards
+    elsif jira_status.downcase == '2nd review'
+      jira.transitions.build.save!('transition' => { 'id' => '131' })
       jira = jira_client.Issue.find(jira_tag)
       puts "Issue #{jira.key} in QA"
     end

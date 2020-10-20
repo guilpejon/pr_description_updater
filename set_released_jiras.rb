@@ -76,13 +76,14 @@ args.split(',').each do |arg|
   ####
 
   jiras.sort.each do |jira_tag|
+    next if jira_tag.include?("BAB") || jira_tag.include?("IMPL")
     jira = jira_client.Issue.find(jira_tag)
     # available_transitions = jira_client.Transition.all(issue: jira)
     # available_transitions.each { |ea| puts "#{ea.name} (id #{ea.id})" }
 
     jira_status = jira.status.name
-    if jira_status.downcase == 'acceptance' || jira_status.downcase == 'done'
-      jira.transitions.build.save!('transition' => { 'id' => '161' })
+    if jira_status.downcase == 'acceptance' || jira_status.downcase == 'done' || jira_status.downcase == 'ready-for-release'
+      jira.transitions.build.save!('transition' => { 'id' => '51' })
       puts "RELEASED issue #{jira.key}"
     end
   rescue StandardError => e
