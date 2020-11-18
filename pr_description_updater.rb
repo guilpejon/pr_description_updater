@@ -131,6 +131,17 @@ args.split(',').each do |arg|
           if deploy_notes_parsed
             @jiras_with_deploy_notes << "#### [#{jira_tag}] #{jira.summary.rstrip} \n #{deploy_notes_parsed}"
           end
+        elsif jira.key.include?('EGYPT') && jira.customfield_10141.present?
+          deploy_notes_parsed = parse_deploy_notes(jira.customfield_10141)
+          if deploy_notes_parsed
+            @jiras_with_deploy_notes << "#### [#{jira_tag}] #{jira.summary.rstrip} \n #{deploy_notes_parsed}"
+          end
+        elsif jira.key.include?('ATL') && jira.customfield_10057.present?
+          puts jira.to_json
+          # deploy_notes_parsed = parse_deploy_notes(jira.customfield_10057)
+          # if deploy_notes_parsed
+          #   @jiras_with_deploy_notes << "#### [#{jira_tag}] #{jira.summary.rstrip} \n #{deploy_notes_parsed}"
+          # end
         end
       end
     end
