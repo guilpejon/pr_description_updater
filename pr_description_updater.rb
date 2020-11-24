@@ -38,7 +38,7 @@ args.split(',').each do |arg|
   ####
 
   repo = gh_client.repos.select { |repository| repository.name == project_name }[0]
-  pull_requests = gh_client.pull_requests "#{ENV['GITHUB_COMPANY_NAME']}/#{project_name}"
+  pull_requests = gh_client.pull_requests("#{ENV['GITHUB_COMPANY_NAME']}/#{project_name}")
   release_pr = pull_requests.select { |pr| pr[:number] == pr_number }[0]
 
   commits = gh_client.pull_request_commits(repo.id, release_pr.number)
